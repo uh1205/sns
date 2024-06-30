@@ -1,0 +1,20 @@
+spring:
+  profiles:
+    active:
+      test
+
+#  스프링 부트는 datasource 설정이 없으면 기본적으로 메모리 DB를 사용하고, driver-class도 현재 등록된 라이브러리를 보고 찾아준다.
+#  추가로 ddl-auto도 create-drop 모드로 동작한다.
+#  따라서 데이터소스나, JPA 관련된 별도의 추가 설정을 하지 않아도 된다.
+
+logging.level:
+  org.hibernate.SQL: debug
+  org.hibernate.orm.jdbc.bind: trace
+
+# JWT 토큰 서명을 위한 비밀 키
+jwt:
+  secret:
+    key: 7Iqk7YyM66W07YOA7L2U65Sp7YG065+9U3ByaW5n6rCV7J2Y7Yqc7YSw7LWc7JuQ67mI7J6F64uI64ukLg==
+
+admin:
+  token: AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC
