@@ -24,10 +24,16 @@ logging.level:
   org.hibernate.orm.jdbc.bind: trace  # 스프링 부트 3.x, Hibernate 6.x에서 JDBC 바인딩을 trace 레벨로 설정합니다.
 #  org.hibernate.type: trace  # 스프링 부트 2.x, Hibernate 5.x에서 타입 변환을 trace 레벨로 설정합니다.
 
+
 # JWT 토큰 서명을 위한 비밀 키
 jwt:
   secret:
     key: 7Iqk7YyM66W07YOA7L2U65Sp7YG065+9U3ByaW5n6rCV7J2Y7Yqc7YSw7LWc7JuQ67mI7J6F64uI64ukLg==
 
+# 어드민 토큰
 admin:
   token: AAABnvxRVklrnYxKZ0aHgTBcXukeZygoC
+
+password:
+  history:
+    limit: 3
