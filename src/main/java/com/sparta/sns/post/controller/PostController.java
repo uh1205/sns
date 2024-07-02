@@ -6,6 +6,7 @@ import com.sparta.sns.post.dto.PostResponse;
 import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.post.service.PostService;
 import com.sparta.sns.security.UserDetailsImpl;
+import com.sparta.sns.tag.TagService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,13 +53,14 @@ public class PostController {
 
     /**
      * 전체 게시물 조회
+     *
      * @param userId - 해당 회원의 전체 게시물을 가져옵니다.
      */
     @GetMapping
     public ResponseEntity<CommonResponse<?>> getAllPosts(
             @RequestParam(defaultValue = "") Long userId,
             @PageableDefault(
-                    sort = "createdAt",
+                    sort = "createdAt", // Pageable 정렬보다 JpaRepository 메서드 네임 쿼리가 우선권을 가진다.
                     direction = Sort.Direction.DESC
             ) Pageable pageable
     ) {
