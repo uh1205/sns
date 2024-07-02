@@ -41,6 +41,8 @@ public class PostService {
 
     /**
      * 전체 게시물 조회
+     *
+     * @param userId - 해당 회원의 전체 게시물을 가져옵니다.
      */
     public Page<Post> getAllPosts(Long userId, Pageable pageable) {
         if (userId == null) {
