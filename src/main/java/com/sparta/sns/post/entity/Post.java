@@ -28,16 +28,13 @@ public class Post {
     @Column(name = "post_id")
     private Long id;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    @Lob
-    private String content;
-
     @Enumerated(EnumType.STRING)
     private Visibility visibility;
 
+    private String content;
     private int likeCount;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -105,6 +102,14 @@ public class Post {
         PostTag postTag = PostTag.of(this, tag);
         this.postTags.add(postTag);
         tag.increaseUsage();
+    }
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        this.likeCount--;
     }
 
 }
