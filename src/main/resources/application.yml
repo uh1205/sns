@@ -9,6 +9,11 @@ spring:
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  servlet:
+    multipart:
+      maxFileSize: 10MB
+      maxRequestSize: 20MB
+
   jpa:
     hibernate:
       ddl-auto: update  # Hibernate 자동 DDL 생성 옵션
