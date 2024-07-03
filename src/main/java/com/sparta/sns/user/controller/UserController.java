@@ -33,7 +33,7 @@ public class UserController {
     /**
      * 회원가입
      */
-    @PostMapping("/signup")
+    @PostMapping("/user/signup")
     public ResponseEntity<CommonResponse<?>> signup(
             @Valid @RequestBody SignupRequest request,
             BindingResult bindingResult
@@ -43,13 +43,13 @@ public class UserController {
         }
         User user = userService.signup(request);
 
-        return getResponseEntity(UserResponse.from(user), "회원가입 성공");
+        return getResponseEntity(UserResponse.of(user), "회원가입 성공");
     }
 
     /**
      * 로그아웃
      */
-    @GetMapping("/logout")
+    @PostMapping("/user/logout")
     public ResponseEntity<CommonResponse<?>> logout(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
@@ -71,7 +71,7 @@ public class UserController {
             ) Pageable pageable
     ) {
         Page<User> page = userService.findAllUsers(pageable);
-        Page<UserResponse> response = page.map(UserResponse::from);
+        Page<UserResponse> response = page.map(UserResponse::of);
 
         return getResponseEntity(response, "전체 회원 조회 성공");
     }
@@ -85,7 +85,7 @@ public class UserController {
     ) {
         User user = userService.findUser(userId);
 
-        return getResponseEntity(UserResponse.from(user), "프로필 조회 성공");
+        return getResponseEntity(UserResponse.of(user), "프로필 조회 성공");
     }
 
     /**
@@ -104,13 +104,13 @@ public class UserController {
 
         User user = userService.updateProfile(userId, request, userDetails.getUser());
 
-        return getResponseEntity(UserResponse.from(user), "프로필 수정 성공");
+        return getResponseEntity(UserResponse.of(user), "프로필 수정 성공");
     }
 
     /**
      * 회원 비밀번호 수정
      */
-    @PatchMapping("/users/{userId}/password")
+    @PatchMapping("/users/{userId}/")
     public ResponseEntity<CommonResponse<?>> updatePassword(
             @PathVariable Long userId,
             @Valid @RequestBody UpdatePasswordRequest request,
@@ -123,7 +123,7 @@ public class UserController {
 
         User user = userService.updatePassword(userId, request, userDetails.getUser());
 
-        return getResponseEntity(UserResponse.from(user), "비빌번호 변경 성공");
+        return getResponseEntity(UserResponse.of(user), "비빌번호 변경 성공");
     }
 
     /**
@@ -142,7 +142,7 @@ public class UserController {
 
         User user = userService.updateRole(userId, request);
 
-        return getResponseEntity(UserResponse.from(user), "회원 권한 수정 성공");
+        return getResponseEntity(UserResponse.of(user), "회원 권한 수정 성공");
     }
 
 }
