@@ -65,7 +65,7 @@ public class PostService {
     @Transactional
     public Post updatePost(Long postId, PostRequest request, User user) {
         Post post = getPost(postId);
-        post.verifyUser(user);
+        post.verifyUser(user.getId());
         Set<Tag> tags = getTagsFromRequest(request.getTagNames());
         post.update(request, tags);
         return post;
@@ -77,7 +77,7 @@ public class PostService {
     @Transactional
     public Long deletePost(Long postId, User user) {
         Post post = getPost(postId);
-        post.verifyUser(user);
+        post.verifyUser(user.getId());
         postRepository.delete(post);
         return postId;
     }

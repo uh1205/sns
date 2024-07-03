@@ -66,8 +66,8 @@ public class Post {
         return new Post(request, images, tags, user);
     }
 
-    public void verifyUser(User user) {
-        if (!user.getId().equals(this.user.getId())) {
+    public void verifyUser(Long userId) {
+        if (!userId.equals(this.user.getId())) {
             throw new DifferentUserException();
         }
     }
