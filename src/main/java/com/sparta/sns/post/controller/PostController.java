@@ -6,7 +6,6 @@ import com.sparta.sns.post.dto.PostResponse;
 import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.post.service.PostService;
 import com.sparta.sns.security.UserDetailsImpl;
-import com.sparta.sns.tag.TagService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -48,7 +47,7 @@ public class PostController {
 
         Post post = postService.createPost(request, files, userDetails.getUser());
 
-        return getResponseEntity(PostResponse.from(post), "게시물 생성 성공");
+        return getResponseEntity(PostResponse.of(post), "게시물 생성 성공");
     }
 
     /**
@@ -66,7 +65,7 @@ public class PostController {
     ) {
         Page<Post> page = postService.getAllPosts(userId, pageable);
 
-        Page<PostResponse> response = page.map(PostResponse::from);
+        Page<PostResponse> response = page.map(PostResponse::of);
 
         return getResponseEntity(response, "전체 게시물 조회 성공");
     }
@@ -80,7 +79,7 @@ public class PostController {
     ) {
         Post post = postService.getPost(postId);
 
-        return getResponseEntity(PostResponse.from(post), "게시물 조회 성공");
+        return getResponseEntity(PostResponse.of(post), "게시물 조회 성공");
     }
 
     /**
@@ -99,7 +98,7 @@ public class PostController {
 
         Post post = postService.updatePost(postId, request, userDetails.getUser());
 
-        return getResponseEntity(PostResponse.from(post), "게시물 수정 성공");
+        return getResponseEntity(PostResponse.of(post), "게시물 수정 성공");
     }
 
     /**
