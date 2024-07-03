@@ -15,7 +15,7 @@ public class UserResponse {
     private String bio;
     private UserRole role;
     private LocalDateTime createdAt;
-    private LocalDateTime modifiedAt;
+    private LocalDateTime updatedAt;
 
     private UserResponse(User user) {
         this.id = user.getId();
@@ -24,10 +24,10 @@ public class UserResponse {
         this.bio = user.getBio();
         this.role = user.getRole();
         this.createdAt = user.getCreatedAt();
-        this.modifiedAt = user.getUpdatedAt();
+        this.updatedAt = user.getUpdatedAt();
     }
 
-    public static UserResponse from(User user) {
+    public static UserResponse of(User user) {
         return new UserResponse(user);
     }
 
