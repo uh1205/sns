@@ -52,14 +52,14 @@ public class Comment {
         return new Comment(request, post, user);
     }
 
-    public void verifyPostId(Long postId) {
+    public void verifyPost(Long postId) {
         if (!postId.equals(this.post.getId())) {
             throw new DifferentPostException();
         }
     }
 
-    public void verifyUser(User user) {
-        if (!user.getId().equals(this.user.getId())) {
+    public void verifyUser(Long userId) {
+        if (!userId.equals(this.user.getId())) {
             throw new DifferentUserException();
         }
     }

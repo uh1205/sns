@@ -45,7 +45,7 @@ public class CommentService {
      */
     public Comment getComment(Long postId, Long commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow(CommentNotFoundException::new);
-        comment.verifyPostId(postId);
+        comment.verifyPost(postId);
         return comment;
     }
 
@@ -55,7 +55,7 @@ public class CommentService {
     @Transactional
     public Comment updateComment(Long postId, Long commentId, CommentRequest request, User user) {
         Comment comment = getComment(postId, commentId);
-        comment.verifyUser(user);
+        comment.verifyUser(user.getId());
         comment.update(request);
         return comment;
     }
@@ -66,7 +66,7 @@ public class CommentService {
     @Transactional
     public Long deleteComment(Long postId, Long commentId, User user) {
         Comment comment = getComment(postId, commentId);
-        comment.verifyUser(user);
+        comment.verifyUser(user.getId());
         commentRepository.delete(comment);
         return commentId;
     }
