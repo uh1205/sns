@@ -1,15 +1,17 @@
 package com.sparta.sns.user.entity;
 
 import com.sparta.sns.base.entity.Timestamped;
-import com.sparta.sns.user.dto.request.UpdateProfileRequest;
+import com.sparta.sns.comment.entity.Comment;
+import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.user.dto.request.SignupRequest;
+import com.sparta.sns.user.dto.request.UpdateProfileRequest;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 @Entity
@@ -18,40 +20,75 @@ import java.util.List;
 @Table(name = "users")
 public class User extends Timestamped {
 
+    private static final int PASSWORD_HISTORY_LIMIT = 5;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String username; // 사용자 이름
+    @Column(unique = true)
+    private String username; // 사용자 아이디
 
-    @Column(nullable = false)
-    private String password; // 비밀번호
+    private String password;
 
-    private String name; // 이름
+    private String name;
 
     private String bio; // 소개
 
-    @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
     private UserRole role; // 사용자 권한 [USER, ADMIN]
 
-    @ElementCollection
-    @CollectionTable(name = "passwords", joinColumns = @JoinColumn(name = "user_id"))
-    private final List<String> passwordHistory = new ArrayList<>(); // 최근 변경한 비밀번호 히스토리
+    @Enumerated(EnumType.STRING)
+    private UserStatus status; // 사용자 상태 [JOINED, WITHDRAWN]
 
-    @Value("${password.history.limit}")
-    private static int PASSWORD_HISTORY_LIMIT;
+    private LocalDateTime statusUpdatedAt;
+
+    private int followersCount; // 팔로워 수
+
+    private int followingCount; // 팔로잉 수
+
+    private int likedPostsCount; // 좋아요한 게시물 수
+
+    private int likedCommentsCount; // 좋아요한 댓글 수
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> likedPosts = new ArrayList<>(); // 좋아요한 게시물
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> likedComments = new ArrayList<>(); // 좋아요한 댓글
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(joinColumns = @JoinColumn(name = "user_id"))
+    private LinkedList<String> passwordHistory = new LinkedList<>(); // 최근 변경한 비밀번호
 
     /**
      * 생성자
      */
-    public User(SignupRequest request, String encodedPassword, UserRole role) {
+    private User(SignupRequest request, String encodedPassword, UserRole role) {
         this.username = request.getUsername();
         this.password = encodedPassword;
         this.name = request.getName();
         this.role = role;
+        this.status = UserStatus.ENABLED;
+        this.statusUpdatedAt = LocalDateTime.now();
+        this.likedPostsCount = 0;
+        this.likedCommentsCount = 0;
+        this.followersCount = 0;
+        this.followingCount = 0;
+        addPasswordToHistory(encodedPassword);
+    }
+
+    public static User of(SignupRequest request, String encodedPassword, UserRole role) {
+        return new User(request, encodedPassword, role);
+    }
+
+    /**
+     * 회원 비활성화
+     */
+    public void disable() {
+        this.status = UserStatus.DISABLED;
+        this.statusUpdatedAt = LocalDateTime.now();
     }
 
     /**
@@ -83,11 +120,11 @@ public class User extends Timestamped {
     /**
      * 새로운 비밀번호 히스토리에 저장
      */
-    public void addPasswordToHistory(String newPassword) {
+    private void addPasswordToHistory(String newPassword) {
         if (passwordHistory.size() == PASSWORD_HISTORY_LIMIT) { // 히스토리가 가득 찬 경우
-            passwordHistory.remove(0); // 가장 오래된 비밀번호 제거
+            passwordHistory.removeFirst(); // 가장 오래된 비밀번호 제거
         }
-        passwordHistory.add(newPassword);
+        passwordHistory.addLast(newPassword);
     }
 
     /**
