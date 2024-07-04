@@ -47,6 +47,23 @@ public class UserController {
     }
 
     /**
+     * 회원 비활성화
+     */
+    @PostMapping("/user/disable")
+    public ResponseEntity<CommonResponse<?>> disable(
+            @Valid @RequestBody DisableRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            BindingResult bindingResult
+    ) {
+        if (bindingResult.hasErrors()) {
+            return getFieldErrorResponseEntity(bindingResult, "회원 비활성화 실패");
+        }
+        Long response = userService.disable(request, userDetails.getUser());
+
+        return getResponseEntity(response, "회원 비활성화 성공");
+    }
+
+    /**
      * 로그아웃
      */
     @PostMapping("/user/logout")

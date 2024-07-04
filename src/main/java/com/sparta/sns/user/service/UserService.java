@@ -47,8 +47,23 @@ public class UserService {
         }
         // 회원가입 진행
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        User user = new User(request, encodedPassword, role);
-        return userRepository.save(user);
+        return userRepository.save(User.of(request, encodedPassword, role));
+    }
+
+    /**
+     * 회원 비활성화
+     */
+    @Transactional
+    public Long disable(DisableRequest request, User user) {
+        if (user.getStatus() == UserStatus.DISABLED) {
+            throw new IllegalArgumentException("이미 비활성화한 사용자입니다.");
+        }
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new PasswordNotMatchException("비밀번호가 일치하지 않습니다.");
+        }
+        user.disable();
+        deleteRefreshToken(user);
+        return user.getId();
     }
 
     /**
