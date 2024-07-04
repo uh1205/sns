@@ -1,12 +1,15 @@
 package com.sparta.sns.user.controller;
 
 import com.sparta.sns.base.dto.CommonResponse;
+import com.sparta.sns.comment.dto.CommentResponse;
+import com.sparta.sns.comment.entity.Comment;
+import com.sparta.sns.comment.service.CommentService;
+import com.sparta.sns.post.dto.PostResponse;
+import com.sparta.sns.post.entity.Post;
+import com.sparta.sns.post.service.PostService;
 import com.sparta.sns.security.UserDetailsImpl;
+import com.sparta.sns.user.dto.request.*;
 import com.sparta.sns.user.dto.response.UserResponse;
-import com.sparta.sns.user.dto.request.RoleRequest;
-import com.sparta.sns.user.dto.request.SignupRequest;
-import com.sparta.sns.user.dto.request.UpdatePasswordRequest;
-import com.sparta.sns.user.dto.request.UpdateProfileRequest;
 import com.sparta.sns.user.entity.User;
 import com.sparta.sns.user.service.UserService;
 import jakarta.validation.Valid;
@@ -21,7 +24,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import static com.sparta.sns.util.ControllerUtil.*;
+import java.util.List;
+
+import static com.sparta.sns.util.ControllerUtil.getFieldErrorResponseEntity;
+import static com.sparta.sns.util.ControllerUtil.getResponseEntity;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,6 +35,8 @@ import static com.sparta.sns.util.ControllerUtil.*;
 public class UserController {
 
     private final UserService userService;
+    private final PostService postService;
+    private final CommentService commentService;
 
     /**
      * 회원가입
@@ -112,14 +120,13 @@ public class UserController {
      */
     @PreAuthorize("isAuthenticated() and hasRole('ROLE_ADMIN')")
     @GetMapping("/users")
-    public ResponseEntity<CommonResponse<?>> findAllUsers(
+    public ResponseEntity<CommonResponse<?>> getAllUsers(
             @PageableDefault(
                     sort = "createdAt",
-                    size = 5,
                     direction = Sort.Direction.DESC
             ) Pageable pageable
     ) {
-        Page<User> page = userService.findAllUsers(pageable);
+        Page<User> page = userService.getAllUsers(pageable);
         Page<UserResponse> response = page.map(UserResponse::of);
 
         return getResponseEntity(response, "전체 회원 조회 성공");
@@ -129,10 +136,10 @@ public class UserController {
      * 회원 프로필 조회
      */
     @GetMapping("/users/{userId}")
-    public ResponseEntity<CommonResponse<?>> findUser(
+    public ResponseEntity<CommonResponse<?>> getUser(
             @PathVariable Long userId
     ) {
-        User user = userService.findUser(userId);
+        User user = userService.getUser(userId);
 
         return getResponseEntity(UserResponse.of(user), "프로필 조회 성공");
     }
@@ -150,7 +157,6 @@ public class UserController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "프로필 수정 실패");
         }
-
         User user = userService.updateProfile(userId, request, userDetails.getUser());
 
         return getResponseEntity(UserResponse.of(user), "프로필 수정 성공");
@@ -169,7 +175,6 @@ public class UserController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "비밀번호 변경 실패");
         }
-
         User user = userService.updatePassword(userId, request, userDetails.getUser());
 
         return getResponseEntity(UserResponse.of(user), "비빌번호 변경 성공");
@@ -188,8 +193,7 @@ public class UserController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "회원 권한 수정 실패");
         }
-
-        User user = userService.updateRole(userId, request);
+        User user = userService.updateRole(userId, request.getRole());
 
         return getResponseEntity(UserResponse.of(user), "회원 권한 수정 성공");
     }
