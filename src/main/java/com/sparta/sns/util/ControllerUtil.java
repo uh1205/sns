@@ -34,9 +34,9 @@ public final class ControllerUtil {
                 .build());
     }
 
-    public static void validatePathIdWithBody(Long pathId, Long bodyId) {
+    public static void verifyPathIdWithBody(Long pathId, Long bodyId) {
         if (!pathId.equals(bodyId)) {
-            throw new IllegalArgumentException("PathVariable의 id가 RequestBody의 id와 일치하지 않습니다.");
+            throw new IllegalArgumentException("PathVariable의 Id가 RequestBody의 Id와 일치하지 않습니다.");
         }
     }
 
