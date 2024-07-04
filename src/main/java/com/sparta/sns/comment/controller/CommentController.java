@@ -17,8 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import static com.sparta.sns.util.ControllerUtil.getFieldErrorResponseEntity;
-import static com.sparta.sns.util.ControllerUtil.getResponseEntity;
+import static com.sparta.sns.util.ControllerUtil.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,9 +39,11 @@ public class CommentController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "댓글 작성 실패");
         }
+        verifyPathIdWithBody(postId, request.getPostId());
+
         Comment comment = commentService.createComment(postId, request, userDetails.getUser());
 
-        return getResponseEntity(CommentResponse.from(comment), "댓글 작성 성공");
+        return getResponseEntity(CommentResponse.of(comment), "댓글 작성 성공");
     }
 
     /**
@@ -57,7 +58,7 @@ public class CommentController {
             ) Pageable pageable
     ) {
         Page<Comment> page = commentService.getAllPostComments(postId, pageable);
-        Page<CommentResponse> response = page.map(CommentResponse::from);
+        Page<CommentResponse> response = page.map(CommentResponse::of);
 
         return getResponseEntity(response, "게시물 전체 댓글 조회 성공");
     }
@@ -72,7 +73,7 @@ public class CommentController {
     ) {
         Comment comment = commentService.getComment(postId, commentId);
 
-        return getResponseEntity(CommentResponse.from(comment), "댓글 조회 성공");
+        return getResponseEntity(CommentResponse.of(comment), "댓글 조회 성공");
     }
 
     /**
@@ -89,9 +90,11 @@ public class CommentController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "댓글 수정 실패");
         }
+        verifyPathIdWithBody(postId, request.getPostId());
+
         Comment comment = commentService.updateComment(postId, commentId, request, userDetails.getUser());
 
-        return getResponseEntity(CommentResponse.from(comment), "댓글 수정 성공");
+        return getResponseEntity(CommentResponse.of(comment), "댓글 수정 성공");
     }
 
     /**

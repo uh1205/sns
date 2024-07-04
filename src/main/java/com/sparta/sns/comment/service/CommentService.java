@@ -1,6 +1,7 @@
 package com.sparta.sns.comment.service;
 
 import com.sparta.sns.comment.Repository.CommentRepository;
+import com.sparta.sns.comment.Repository.CommentRepositoryCustomImpl;
 import com.sparta.sns.comment.dto.CommentRequest;
 import com.sparta.sns.comment.entity.Comment;
 import com.sparta.sns.exception.CommentNotFoundException;
@@ -21,13 +22,15 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final CommentRepositoryCustomImpl commentRepositoryCustom;
 
     /**
      * 댓글 작성
      */
     @Transactional
     public Comment createComment(Long postId, CommentRequest request, User user) {
-        Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException(postId));
         Comment comment = Comment.of(request, post, user);
         return commentRepository.save(comment);
     }
@@ -36,15 +39,24 @@ public class CommentService {
      * 해당 게시물의 전체 댓글 조회
      */
     public Page<Comment> getAllPostComments(Long postId, Pageable pageable) {
-        Post post = postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException(postId));
         return commentRepository.findAllByPost(post, pageable);
+    }
+
+    /**
+     * 해당 사용자가 좋아요한 전체 댓글 조회
+     */
+    public Page<Comment> getLikedComments(User user, Pageable pageable) {
+        return commentRepositoryCustom.findWithUserLike(user, pageable);
     }
 
     /**
      * 특정 댓글 조회
      */
     public Comment getComment(Long postId, Long commentId) {
-        Comment comment = commentRepository.findById(commentId).orElseThrow(CommentNotFoundException::new);
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentNotFoundException(commentId));
         comment.verifyPost(postId);
         return comment;
     }

@@ -26,7 +26,7 @@ public class CommentResponse {
         this.updatedAt = comment.getUpdatedAt();
     }
 
-    public static CommentResponse from(Comment comment) {
+    public static CommentResponse of(Comment comment) {
         return new CommentResponse(comment);
     }
 

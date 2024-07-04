@@ -3,6 +3,7 @@ package com.sparta.sns.comment.entity;
 import com.sparta.sns.comment.dto.CommentRequest;
 import com.sparta.sns.exception.DifferentPostException;
 import com.sparta.sns.exception.DifferentUserException;
+import com.sparta.sns.like.entity.Like;
 import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.user.entity.User;
 import jakarta.persistence.*;
@@ -11,6 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -23,8 +26,11 @@ public class Comment {
     private Long id;
 
     private String content;
+
     private int likeCount;
+
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -34,6 +40,9 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
 
     /**
      * 생성자

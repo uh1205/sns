@@ -7,6 +7,9 @@ import lombok.Data;
 @Data
 public class CommentRequest {
 
+    @NotNull
+    private Long postId;
+
     @NotBlank
     private String content;
 
