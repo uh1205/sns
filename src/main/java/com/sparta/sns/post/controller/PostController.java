@@ -72,6 +72,25 @@ public class PostController {
     }
 
     /**
+     * 팔로잉 중인 회원들의 전체 게시물 조회
+     */
+    @GetMapping
+    public ResponseEntity<CommonResponse<?>> getFollowingPosts(
+            @RequestBody PostSearchCond cond,
+            @PageableDefault(
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Page<Post> page = postService.getFollowingPosts(userDetails.getUser(), cond, pageable);
+
+        Page<PostResponse> response = page.map(PostResponse::of);
+
+        return getResponseEntity(response, "팔로잉 중인 회원들의 전체 게시물 조회 성공");
+    }
+
+    /**
      * 게시물 조회
      */
     @GetMapping("/{postId}")
