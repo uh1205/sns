@@ -1,8 +1,11 @@
 package com.sparta.sns.post.controller;
 
 import com.sparta.sns.base.dto.CommonResponse;
+import com.sparta.sns.image.entity.Image;
+import com.sparta.sns.image.service.ImageService;
 import com.sparta.sns.post.dto.PostRequest;
 import com.sparta.sns.post.dto.PostResponse;
+import com.sparta.sns.post.dto.PostSearchCond;
 import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.post.service.PostService;
 import com.sparta.sns.security.UserDetailsImpl;
@@ -115,7 +118,6 @@ public class PostController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "게시물 수정 실패");
         }
-
         Post post = postService.updatePost(postId, request, userDetails.getUser());
 
         return getResponseEntity(PostResponse.of(post), "게시물 수정 성공");
