@@ -1,12 +1,15 @@
 package com.sparta.sns.user.service;
 
-import com.sparta.sns.user.repository.RefreshTokenRepository;
-import com.sparta.sns.user.dto.request.UpdateProfileRequest;
-import com.sparta.sns.user.dto.request.RoleRequest;
+import com.sparta.sns.exception.PasswordNotMatchException;
+import com.sparta.sns.exception.UserNotFoundException;
 import com.sparta.sns.user.dto.request.SignupRequest;
 import com.sparta.sns.user.dto.request.UpdatePasswordRequest;
+import com.sparta.sns.user.dto.request.UpdateProfileRequest;
+import com.sparta.sns.user.dto.request.DisableRequest;
 import com.sparta.sns.user.entity.User;
 import com.sparta.sns.user.entity.UserRole;
+import com.sparta.sns.user.entity.UserStatus;
+import com.sparta.sns.user.repository.RefreshTokenRepository;
 import com.sparta.sns.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +50,6 @@ public class UserService {
             }
             role = UserRole.ADMIN;
         }
-        // 회원가입 진행
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         return userRepository.save(User.of(request, encodedPassword, role));
     }
@@ -71,23 +75,23 @@ public class UserService {
      */
     @Transactional
     public Long logout(User user) {
-        refreshTokenRepository.deleteByUsername(user.getUsername());
+        deleteRefreshToken(user);
         return user.getId();
     }
 
     /**
-     * 전체 회원 조회 (관리자 전용)
+     * 전체 회원 조회
      */
-    public Page<User> findAllUsers(Pageable pageable) {
+    public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
     }
 
     /**
      * 회원 조회
      */
-    public User findUser(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() ->
-                new IllegalArgumentException("존재하지 않는 회원입니다."));
+    public User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     /**
@@ -96,10 +100,8 @@ public class UserService {
     @Transactional
     public User updateProfile(Long userId, UpdateProfileRequest request, User requestUser) {
         requestUser.verifyAccessAuthority(userId);
-
-        User user = findUser(userId);
+        User user = getUser(userId);
         user.updateProfile(request);
-
         return user;
     }
 
@@ -109,39 +111,49 @@ public class UserService {
     @Transactional
     public User updatePassword(Long userId, UpdatePasswordRequest request, User requestUser) {
         requestUser.verifyAccessAuthority(userId);
+        User user = getUser(userId);
 
-        User user = findUser(userId);
         String currentPassword = user.getPassword();
-
         if (!passwordEncoder.matches(request.getCurrentPassword(), currentPassword)) {
-            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            throw new PasswordNotMatchException("현재 비밀번호가 일치하지 않습니다.");
         }
 
         String newPassword = request.getNewPassword();
-        String retypedNewPassword = request.getRetypedNewPassword();
-
-        if (!newPassword.equals(retypedNewPassword)) {
-            throw new IllegalArgumentException("새 비밀번호가 일치하지 않습니다.");
+        if (passwordEncoder.matches(newPassword, currentPassword)) {
+            throw new PasswordNotMatchException("현재 비밀번호와 동일한 비밀번호로 수정할 수 없습니다.");
         }
 
-        if (passwordEncoder.matches(newPassword, currentPassword)) {
-            throw new IllegalArgumentException("현재 비밀번호와 동일한 비밀번호로 수정할 수 없습니다.");
+        String retypedNewPassword = request.getRetypedNewPassword();
+        if (!newPassword.equals(retypedNewPassword)) {
+            throw new PasswordNotMatchException("새 비밀번호가 일치하지 않습니다.");
         }
 
         user.updatePassword(passwordEncoder.encode(newPassword));
-
         return user;
     }
 
     /**
-     * 회원 권한 수정 (관리자 전용)
+     * 회원 권한 수정
      */
     @Transactional
-    public User updateRole(Long userId, RoleRequest request) {
-        User user = findUser(userId);
-        user.updateRole(request.getRole());
-
+    public User updateRole(Long userId, UserRole role) {
+        User user = getUser(userId);
+        user.updateRole(role);
         return user;
+    }
+
+    /**
+     * 팔로워가 가장 많은 상위 10명의 회원 프로필 조회
+     */
+    public List<User> getInfluencers() {
+        return userRepository.findTop10ByOrderByFollowersCountDesc();
+    }
+
+    /**
+     * Refresh 토큰 삭제
+     */
+    private void deleteRefreshToken(User user) {
+        refreshTokenRepository.deleteByUsername(user.getUsername());
     }
 
 }
