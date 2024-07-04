@@ -8,9 +8,9 @@ import lombok.Data;
 public class LikeRequest {
 
     @NotNull
-    private Long contentId;
+    private ContentType contentType;
 
     @NotNull
-    private ContentType contentType;
+    private Long contentId;
 
 }

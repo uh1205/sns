@@ -10,7 +10,7 @@ public enum ContentType {
     COMMENT;
 
     @JsonCreator
-    public static ContentType parsing(String inputValue) {
+    public static ContentType of(String inputValue) {
         return Stream.of(ContentType.values())
                 .filter(contentType -> contentType.toString().equals(inputValue.toUpperCase()))
                 .findFirst()

@@ -2,12 +2,10 @@ package com.sparta.sns.like.service;
 
 import com.sparta.sns.comment.Repository.CommentRepository;
 import com.sparta.sns.comment.entity.Comment;
-import com.sparta.sns.exception.CommentNotFoundException;
-import com.sparta.sns.exception.PostNotFoundException;
-import com.sparta.sns.exception.SelfLikeException;
+import com.sparta.sns.exception.*;
 import com.sparta.sns.like.dto.LikeRequest;
+import com.sparta.sns.like.entity.ContentType;
 import com.sparta.sns.like.entity.Like;
-import com.sparta.sns.like.entity.LikeStatus;
 import com.sparta.sns.like.repository.LikeRepository;
 import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.post.repository.PostRepository;
@@ -26,87 +24,96 @@ public class LikeService {
     private final CommentRepository commentRepository;
 
     /**
-     * 좋아요 토글
+     * 좋아요
      */
     @Transactional
-    public Like toggleLike(LikeRequest request, User user) {
-        Like like = likeRepository.findByContentIdAndContentType(request.getContentId(), request.getContentType())
-                .orElseGet(() -> createLike(request, user));
+    public Like doLike(LikeRequest request, User user) {
+        Long contentId = request.getContentId();
+        ContentType contentType = request.getContentType();
 
-        if (like.getStatus().equals(LikeStatus.CANCELED)) {
-            doLike(like, user.getId()); // 취소된 좋아요거나 신규 좋아요인 경우 좋아요 수행
-        } else {
-            cancelLike(like, user.getId()); // 이미 좋아요 상태인 경우 좋아요 취소
+        if (likeRepository.existsByContentTypeAndContentIdAndUser(contentType, contentId, user)) {
+            throw new AlreadyLikeException("이미 좋아요 상태입니다.");
+        }
+        Like like = null;
+        switch (contentType) {
+            case POST -> like = doLikePost(contentId, user);
+            case COMMENT -> like = doLikeComment(contentId, user);
         }
         return like;
     }
 
-    /**
-     * 신규 좋아요 생성
-     */
-    public Like createLike(LikeRequest request, User user) {
-        Long writerId = null;
-        Long contentId = request.getContentId();
-        switch (request.getContentType()) {
-            case POST -> {
-                Post post = getPost(contentId);
-                writerId = post.getUser().getId();
-            }
-            case COMMENT -> {
-                Comment comment = getComment(contentId);
-                writerId = comment.getUser().getId();
-            }
-        }
-        if (writerId.equals(user.getId())) {
-            throw new SelfLikeException();
-        }
-        return likeRepository.save(Like.of(request, user));
+    private Like doLikePost(Long postId, User user) {
+        Post post = getPost(postId);
+        checkSelfLike(post.getUser().getId(), user.getId());
+
+        post.increaseLikeCount();
+        user.getLikedPosts().add(post);
+
+        return Like.of(postId, ContentType.POST, user);
     }
 
-    /**
-     * 좋아요 수행
-     */
-    private void doLike(Like like, Long userId) {
-        Long contentId = like.getContentId();
-        switch (like.getContentType()) {
-            case POST -> {
-                Post post = getPost(contentId);
-                post.increaseLikeCount();
-            }
-            case COMMENT -> {
-                Comment comment = getComment(contentId);
-                comment.increaseLikeCount();
-            }
-        }
-        like.doLike(userId);
+    private Like doLikeComment(Long commentId, User user) {
+        Comment comment = getComment(commentId);
+        checkSelfLike(comment.getUser().getId(), user.getId());
+
+        comment.increaseLikeCount();
+        user.getLikedComments().add(comment);
+
+        return Like.of(commentId, ContentType.COMMENT, user);
     }
 
     /**
      * 좋아요 취소
      */
-    private void cancelLike(Like like, Long userId) {
-        Long contentId = like.getContentId();
-        switch (like.getContentType()) {
-            case POST -> {
-                Post post = getPost(contentId);
-                post.decreaseLikeCount();
-            }
-            case COMMENT -> {
-                Comment comment = getComment(contentId);
-                comment.decreaseLikeCount();
-            }
+    @Transactional
+    public Long cancelLike(LikeRequest request, User user) {
+        Long contentId = request.getContentId();
+        ContentType contentType = request.getContentType();
+
+        Like like = getLike(contentType, contentId, user);
+        likeRepository.delete(like);
+
+        switch (contentType) {
+            case POST -> cancelPostLike(contentId, user);
+            case COMMENT -> cancelCommentLike(contentId, user);
         }
-        like.cancelLike(userId);
+        return like.getId();
     }
 
-    private Post getPost(Long contentId) {
-        return postRepository.findById(contentId)
-                .orElseThrow(PostNotFoundException::new);
+    private void cancelPostLike(Long postId, User user) {
+        Post post = getPost(postId);
+        post.decreaseLikeCount();
+        user.getLikedPosts().remove(post);
     }
 
-    private Comment getComment(Long contentId) {
-        return commentRepository.findById(contentId)
-                .orElseThrow(CommentNotFoundException::new);
+    private void cancelCommentLike(Long commentId, User user) {
+        Comment comment = getComment(commentId);
+        comment.decreaseLikeCount();
+        user.getLikedComments().remove(comment);
+    }
+
+    /**
+     * 본인이 작성한 컨텐츠인지 확인
+     */
+    private void checkSelfLike(Long writerId, Long userId) {
+        if (writerId.equals(userId)) {
+            throw new SelfLikeException();
+        }
+    }
+
+    private Post getPost(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException(postId));
+    }
+
+    private Comment getComment(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> new CommentNotFoundException(commentId));
+    }
+
+    private Like getLike(ContentType contentType, Long contentId, User user) {
+        return likeRepository.findByContentTypeAndContentIdAndUser(contentType, contentId, user)
+                .orElseThrow(() -> new LikeNotFoundException(contentType, contentId));
     }
 
 }
