@@ -30,6 +30,7 @@ import static com.sparta.sns.util.ControllerUtil.getResponseEntity;
 public class PostController {
 
     private final PostService postService;
+    private final ImageService imageService;
 
     /**
      * 게시물 작성
@@ -44,8 +45,8 @@ public class PostController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "게시물 생성 실패");
         }
-
-        Post post = postService.createPost(request, files, userDetails.getUser());
+        List<Image> images = imageService.upload(files);
+        Post post = postService.createPost(request, images, userDetails.getUser());
 
         return getResponseEntity(PostResponse.of(post), "게시물 생성 성공");
     }
