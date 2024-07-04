@@ -198,4 +198,16 @@ public class UserController {
         return getResponseEntity(UserResponse.of(user), "회원 권한 수정 성공");
     }
 
+    /**
+     * 팔로워가 가장 많은 상위 10명의 회원 프로필 조회
+     */
+    @GetMapping("/influencers")
+    public ResponseEntity<CommonResponse<?>> getInfluencers() {
+        List<User> influencers = userService.getInfluencers();
+        List<UserResponse> response = influencers.stream()
+                .map(UserResponse::of).toList();
+
+        return getResponseEntity(response, "팔로워가 가장 많은 상위 10명의 회원 프로필 조회 성공");
+    }
+
 }
