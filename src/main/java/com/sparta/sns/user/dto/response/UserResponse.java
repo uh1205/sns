@@ -2,9 +2,8 @@ package com.sparta.sns.user.dto.response;
 
 import com.sparta.sns.user.entity.User;
 import com.sparta.sns.user.entity.UserRole;
+import com.sparta.sns.user.entity.UserStatus;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 @Data
 public class UserResponse {
@@ -14,8 +13,11 @@ public class UserResponse {
     private String name;
     private String bio;
     private UserRole role;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private UserStatus status; // 사용자 상태 [JOINED, WITHDRAWN]
+    private int followersCount; // 팔로워 수
+    private int followingCount; // 팔로잉 수
+    private int likedPostsCount; // 좋아요한 게시물 수
+    private int likedCommentsCount; // 좋아요한 댓글 수
 
     private UserResponse(User user) {
         this.id = user.getId();
@@ -23,8 +25,11 @@ public class UserResponse {
         this.name = user.getName();
         this.bio = user.getBio();
         this.role = user.getRole();
-        this.createdAt = user.getCreatedAt();
-        this.updatedAt = user.getUpdatedAt();
+        this.status = user.getStatus();
+        this.followingCount = user.getFollowingCount();
+        this.followersCount = user.getFollowersCount();
+        this.likedPostsCount = user.getLikedPostsCount();
+        this.likedCommentsCount = user.getLikedCommentsCount();
     }
 
     public static UserResponse of(User user) {
