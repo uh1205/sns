@@ -69,7 +69,7 @@ public class JwtProvider {
         Date date = new Date();
 
         return BEARER_PREFIX + Jwts.builder()
-                .setSubject(username) // 생략 가능?
+                .setSubject(username) // 갱신용 토큰이기 때문에 사용자 정보는 굳이 안 넣어도 된다?
                 .claim(AUTHORIZATION_KEY, role)
                 .setExpiration(new Date(date.getTime() + REFRESH_TOKEN_TIME))
                 .setIssuedAt(date) // 발급일
