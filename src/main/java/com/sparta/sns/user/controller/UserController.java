@@ -76,6 +76,38 @@ public class UserController {
     }
 
     /**
+     * 좋아요한 전체 게시물 조회
+     */
+    @GetMapping("/user/likes/posts")
+    public ResponseEntity<CommonResponse<?>> getLikedPosts(
+            @PageableDefault(
+                    size = 5
+            ) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Page<Post> page = postService.getLikedPosts(userDetails.getUser(), pageable);
+        Page<PostResponse> response = page.map(PostResponse::of);
+
+        return getResponseEntity(response, "좋아요한 전체 게시물 조회 성공");
+    }
+
+    /**
+     * 좋아요한 전체 댓글 조회
+     */
+    @GetMapping("/user/likes/comments")
+    public ResponseEntity<CommonResponse<?>> getLikedComments(
+            @PageableDefault(
+                    size = 5
+            ) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Page<Comment> page = commentService.getLikedComments(userDetails.getUser(), pageable);
+        Page<CommentResponse> response = page.map(CommentResponse::of);
+
+        return getResponseEntity(response, "좋아요한 전체 댓글 조회 성공");
+    }
+
+    /**
      * 전체 회원 조회 (관리자 전용)
      */
     @PreAuthorize("isAuthenticated() and hasRole('ROLE_ADMIN')")
