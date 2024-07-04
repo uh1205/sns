@@ -17,9 +17,9 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
+    private String username; // key
 
-    private String refreshToken;
+    private String refreshToken; // value
 
     public RefreshToken(String username, String refreshToken) {
         this.username = username;
