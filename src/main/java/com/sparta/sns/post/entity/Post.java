@@ -2,7 +2,8 @@ package com.sparta.sns.post.entity;
 
 import com.sparta.sns.comment.entity.Comment;
 import com.sparta.sns.exception.DifferentUserException;
-import com.sparta.sns.image.Image;
+import com.sparta.sns.image.entity.Image;
+import com.sparta.sns.like.entity.Like;
 import com.sparta.sns.post.dto.PostRequest;
 import com.sparta.sns.tag.Tag;
 import com.sparta.sns.user.entity.User;
@@ -10,7 +11,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,12 +28,12 @@ public class Post {
     @Column(name = "post_id")
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private Visibility visibility;
-
     private String content;
+
     private int likeCount;
+
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,24 +45,29 @@ public class Post {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images = new ArrayList<>();
+    // 이미지는 서버, DB, 파일 시스템에 저장할 수 있으며, 각각의 장단점이 있으나 보통 외부 서버에 저장하는 것이 권장된다.
+    // 보통 클라우드 스토리지(예: AWS S3)를 많이 이용한다.
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Like> likes = new ArrayList<>();
+
     /**
      * 생성자
      */
-    private Post(PostRequest request, List<MultipartFile> images, Set<Tag> tags, User user) {
+    private Post(PostRequest request, List<Image> images, Set<Tag> tags, User user) {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.content = request.getContent();
-        this.visibility = request.getVisibility();
         this.likeCount = 0;
         this.user = user;
+        setImages(images);
         setPostTags(tags);
     }
 
-    public static Post of(PostRequest request, List<MultipartFile> images, Set<Tag> tags, User user) {
+    public static Post of(PostRequest request, List<Image> images, Set<Tag> tags, User user) {
         return new Post(request, images, tags, user);
     }
 
@@ -74,9 +79,15 @@ public class Post {
 
     public void update(PostRequest request, Set<Tag> tags) {
         this.content = request.getContent();
-        this.visibility = request.getVisibility();
         this.updatedAt = LocalDateTime.now();
         setPostTags(tags);
+    }
+
+    private void setImages(List<Image> images) {
+        for (Image image : images) {
+            this.images.add(image);
+            image.setPost(this);
+        }
     }
 
     private void setPostTags(Set<Tag> newTags) {
