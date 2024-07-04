@@ -2,9 +2,12 @@ package com.sparta.sns.post.service;
 
 import com.sparta.sns.exception.PostNotFoundException;
 import com.sparta.sns.exception.UserNotFoundException;
+import com.sparta.sns.image.entity.Image;
 import com.sparta.sns.post.dto.PostRequest;
+import com.sparta.sns.post.dto.PostSearchCond;
 import com.sparta.sns.post.entity.Post;
 import com.sparta.sns.post.repository.PostRepository;
+import com.sparta.sns.post.repository.PostRepositoryCustomImpl;
 import com.sparta.sns.tag.Tag;
 import com.sparta.sns.tag.TagRepository;
 import com.sparta.sns.user.entity.User;
@@ -14,7 +17,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashSet;
 import java.util.List;
@@ -28,14 +30,15 @@ public class PostService {
     private final PostRepository postRepository;
     private final TagRepository tagRepository;
     private final UserRepository userRepository;
+    private final PostRepositoryCustomImpl postRepositoryCustom;
 
     /**
      * 게시물 작성
      */
     @Transactional
-    public Post createPost(PostRequest request, List<MultipartFile> files, User user) {
+    public Post createPost(PostRequest request, List<Image> images, User user) {
         Set<Tag> tags = getTagsFromRequest(request.getTagNames());
-        Post post = Post.of(request, files, tags, user);
+        Post post = Post.of(request, images, tags, user);
         return postRepository.save(post);
     }
 
@@ -48,15 +51,31 @@ public class PostService {
         if (userId == null) {
             return postRepository.findAll(pageable);
         }
-        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
         return postRepository.findAllByUser(user, pageable);
     }
 
     /**
-     * 특정 게시물 조회
+     * 팔로잉 중인 회원들의 전체 게시물 조회
+     */
+    public Page<Post> getFollowingPosts(User user, PostSearchCond cond, Pageable pageable) {
+        return postRepositoryCustom.findWithUserFollow(user, cond, pageable);
+    }
+
+    /**
+     * 해당 사용자가 좋아요한 전체 게시물 조회
+     */
+    public Page<Post> getLikedPosts(User user, Pageable pageable) {
+        return postRepositoryCustom.findWithUserLike(user, pageable);
+    }
+
+    /**
+     * 게시물 조회
      */
     public Post getPost(Long postId) {
-        return postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException(postId));
     }
 
     /**
