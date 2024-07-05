@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class RoleRequest {
+public class UserRoleRequest {
 
     @NotNull
     private UserRole role;

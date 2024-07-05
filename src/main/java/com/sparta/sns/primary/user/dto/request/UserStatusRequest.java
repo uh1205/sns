@@ -1,14 +1,14 @@
 package com.sparta.sns.primary.user.dto.request;
 
+import com.sparta.sns.primary.user.entity.UserStatus;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class DisableRequest {
+public class UserStatusRequest {
 
-    @NotNull
-    private Long userId;
+    @NotBlank
+    private UserStatus status;
 
     @NotBlank
     private String password;

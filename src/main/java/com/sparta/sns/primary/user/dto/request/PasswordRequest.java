@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class UpdatePasswordRequest {
+public class PasswordRequest {
 
     @NotBlank
     private String currentPassword; // 현재 비밀번호
