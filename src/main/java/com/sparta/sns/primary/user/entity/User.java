@@ -1,9 +1,7 @@
 package com.sparta.sns.primary.user.entity;
 
-import com.sparta.sns.primary.comment.entity.Comment;
-import com.sparta.sns.primary.post.entity.Post;
+import com.sparta.sns.primary.user.dto.request.ProfileRequest;
 import com.sparta.sns.primary.user.dto.request.SignupRequest;
-import com.sparta.sns.primary.user.dto.request.UpdateProfileRequest;
 import com.sparta.sns.secondary.base.entity.Timestamped;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -31,32 +29,22 @@ public class User extends Timestamped {
     private String username; // 사용자 아이디
 
     private String password;
-
     private String name;
-
     private String bio; // 소개
 
     @Enumerated(value = EnumType.STRING)
-    private UserRole role; // 사용자 권한 [USER, ADMIN]
+    private UserRole role;
 
-    @Enumerated(EnumType.STRING)
-    private UserStatus status; // 사용자 상태 [JOINED, WITHDRAWN]
+    @Enumerated(value = EnumType.STRING)
+    private UserStatus status;
 
     private LocalDateTime statusUpdatedAt;
 
     private int followersCount; // 팔로워 수
-
     private int followingCount; // 팔로잉 수
 
     private int likedPostsCount; // 좋아요한 게시물 수
-
     private int likedCommentsCount; // 좋아요한 댓글 수
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Post> likedPosts = new ArrayList<>(); // 좋아요한 게시물
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> likedComments = new ArrayList<>(); // 좋아요한 댓글
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(joinColumns = @JoinColumn(name = "user_id"))
@@ -70,7 +58,7 @@ public class User extends Timestamped {
         this.password = encodedPassword;
         this.name = request.getName();
         this.role = role;
-        this.status = UserStatus.ENABLED;
+        this.status = UserStatus.ACTIVATED;
         this.statusUpdatedAt = LocalDateTime.now();
         this.likedPostsCount = 0;
         this.likedCommentsCount = 0;
@@ -84,23 +72,15 @@ public class User extends Timestamped {
     }
 
     /**
-     * 회원 비활성화
-     */
-    public void disable() {
-        this.status = UserStatus.DISABLED;
-        this.statusUpdatedAt = LocalDateTime.now();
-    }
-
-    /**
      * 회원 프로필 수정
      */
-    public void updateProfile(UpdateProfileRequest request) {
+    public void updateProfile(ProfileRequest request) {
         this.name = request.getName();
         this.bio = request.getBio();
     }
 
     /**
-     * 회원 비밀번호 수정
+     * 회원 비밀번호 변경
      */
     public void updatePassword(String newPassword) {
         if (isPasswordInHistory(newPassword)) {
@@ -111,9 +91,33 @@ public class User extends Timestamped {
     }
 
     /**
+     * 회원 권한 변경
+     */
+    public void updateRole(UserRole role) {
+        this.role = role;
+    }
+
+    /**
+     * 회원 상태 변경
+     */
+    public void updateStatus(UserStatus status) {
+        this.status = status;
+        this.statusUpdatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 해당 userId에 대한 액세스 권한 검증
+     */
+    public void verifyAccessAuthority(Long userId) {
+        if (!this.id.equals(userId) && !this.role.equals(UserRole.ADMIN)) {
+            throw new IllegalArgumentException("액세스 권한이 없는 회원입니다.");
+        }
+    }
+
+    /**
      * 최근에 변경한 비밀번호인지 확인
      */
-    public boolean isPasswordInHistory(String password) {
+    private boolean isPasswordInHistory(String password) {
         return passwordHistory.contains(password);
     }
 
@@ -127,20 +131,36 @@ public class User extends Timestamped {
         passwordHistory.add(newPassword);
     }
 
-    /**
-     * 회원 권한 수정
-     */
-    public void updateRole(UserRole role) {
-        this.role = role;
+    public void increaseFollowersCount() {
+        this.followersCount++;
     }
 
-    /**
-     * 해당 userId 에 대한 액세스 권한 검증
-     */
-    public void verifyAccessAuthority(Long userId) {
-        if (!this.id.equals(userId) && !this.role.equals(UserRole.ADMIN)) {
-            throw new IllegalArgumentException("액세스 권한이 없는 회원입니다.");
-        }
+    public void decreaseFollowersCount() {
+        this.followersCount--;
+    }
+
+    public void increaseFollowingCount() {
+        this.followingCount++;
+    }
+
+    public void decreaseFollowingCount() {
+        this.followingCount--;
+    }
+
+    public void increaseLikedPostsCount() {
+        this.likedPostsCount++;
+    }
+
+    public void decreaseLikedPostsCount() {
+        this.likedPostsCount--;
+    }
+
+    public void increaseLikedCommentsCount() {
+        this.likedCommentsCount++;
+    }
+
+    public void decreaseLikedCommentsCount() {
+        this.likedCommentsCount--;
     }
 
 }

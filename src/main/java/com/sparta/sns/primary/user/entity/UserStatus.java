@@ -2,7 +2,7 @@ package com.sparta.sns.primary.user.entity;
 
 public enum UserStatus {
 
-    ENABLED,
-    DISABLED
+    ACTIVATED, // 활성화
+    DEACTIVATED // 비활성화
 
 }
