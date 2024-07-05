@@ -1,16 +1,16 @@
 package com.sparta.sns.primary.user.service;
 
-import com.sparta.sns.secondary.exception.PasswordNotMatchException;
-import com.sparta.sns.secondary.exception.UserNotFoundException;
-import com.sparta.sns.primary.user.dto.request.DisableRequest;
 import com.sparta.sns.primary.user.dto.request.SignupRequest;
-import com.sparta.sns.primary.user.entity.UserStatus;
-import com.sparta.sns.primary.user.repository.RefreshTokenRepository;
-import com.sparta.sns.primary.user.dto.request.UpdatePasswordRequest;
-import com.sparta.sns.primary.user.dto.request.UpdateProfileRequest;
+import com.sparta.sns.primary.user.dto.request.PasswordRequest;
+import com.sparta.sns.primary.user.dto.request.ProfileRequest;
+import com.sparta.sns.primary.user.dto.request.UserStatusRequest;
 import com.sparta.sns.primary.user.entity.User;
 import com.sparta.sns.primary.user.entity.UserRole;
+import com.sparta.sns.primary.user.entity.UserStatus;
+import com.sparta.sns.primary.user.repository.RefreshTokenRepository;
 import com.sparta.sns.primary.user.repository.UserRepository;
+import com.sparta.sns.secondary.exception.PasswordNotMatchException;
+import com.sparta.sns.secondary.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -26,12 +26,12 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class UserService {
 
+    @Value("${admin.token}")
+    private String adminToken;
+
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository; // 추후 Redis 사용
-
-    @Value("${admin.token}")
-    private String adminToken;
 
     /**
      * 회원가입
@@ -55,24 +55,6 @@ public class UserService {
     }
 
     /**
-     * 회원 비활성화
-     */
-    @Transactional
-    public Long disable(DisableRequest request, User requestUser) {
-        User user = getUser(request.getUserId());
-        user.verifyAccessAuthority(request.getUserId());
-        if (user.getStatus() == UserStatus.DISABLED) {
-            throw new IllegalArgumentException("이미 비활성화한 사용자입니다.");
-        }
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new PasswordNotMatchException("비밀번호가 일치하지 않습니다.");
-        }
-        user.disable();
-        deleteRefreshToken(user);
-        return user.getId();
-    }
-
-    /**
      * 로그아웃
      */
     @Transactional
@@ -82,7 +64,7 @@ public class UserService {
     }
 
     /**
-     * 전체 회원 조회
+     * 전체 회원 조회 (admin only)
      */
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
@@ -100,46 +82,70 @@ public class UserService {
      * 프로필 수정
      */
     @Transactional
-    public User updateProfile(Long userId, UpdateProfileRequest request, User requestUser) {
-        requestUser.verifyAccessAuthority(userId);
-        User user = getUser(userId);
+    public User updateProfile(Long userId, ProfileRequest request, User requestUser) {
+        User user = getUserWithVerification(userId, requestUser);
         user.updateProfile(request);
         return user;
     }
 
     /**
-     * 비밀번호 수정
+     * 비밀번호 변경
      */
     @Transactional
-    public User updatePassword(Long userId, UpdatePasswordRequest request, User requestUser) {
-        requestUser.verifyAccessAuthority(userId);
-        User user = getUser(userId);
-
+    public User updatePassword(Long userId, PasswordRequest request, User requestUser) {
+        User user = getUserWithVerification(userId, requestUser);
+        // 현재 비밀번호 일치 여부 확인
         String currentPassword = user.getPassword();
-        if (!passwordEncoder.matches(request.getCurrentPassword(), currentPassword)) {
+        if (isNotSamePassword(request.getCurrentPassword(), currentPassword)) {
             throw new PasswordNotMatchException("현재 비밀번호가 일치하지 않습니다.");
         }
-
+        // 현재 비밀번호와 새 비밀번호 일치 여부 확인
         String newPassword = request.getNewPassword();
-        if (passwordEncoder.matches(newPassword, currentPassword)) {
+        if (isNotSamePassword(newPassword, currentPassword)) {
             throw new PasswordNotMatchException("현재 비밀번호와 동일한 비밀번호로 수정할 수 없습니다.");
         }
-
+        // 새 비밀번호 일치 여부 확인
         String retypedNewPassword = request.getRetypedNewPassword();
         if (!newPassword.equals(retypedNewPassword)) {
             throw new PasswordNotMatchException("새 비밀번호가 일치하지 않습니다.");
         }
-
         user.updatePassword(passwordEncoder.encode(newPassword));
         return user;
     }
 
     /**
-     * 회원 권한 수정
+     * 회원 상태 변경
      */
     @Transactional
-    public User updateRole(Long userId, UserRole role) {
+    public Long updateUserStatus(Long userId, UserStatusRequest request, User requestUser) {
+        User user = getUserWithVerification(userId, requestUser);
+        // 비밀번호 일치 여부 확인
+        if (isNotSamePassword(request.getPassword(), user.getPassword())) {
+            throw new PasswordNotMatchException("비밀번호가 일치하지 않습니다.");
+        }
+        // 같은 상태로 변경하는지 확인
+        UserStatus status = request.getStatus();
+        if (status.equals(user.getStatus())) {
+            throw new IllegalArgumentException("해당 회원의 상태가 이미 " + status + " 상태입니다.");
+        }
+        // 비활성화 시 리프레시 토큰 삭제
+        if (status.equals(UserStatus.DEACTIVATED)) {
+            deleteRefreshToken(user);
+        }
+        user.updateStatus(status);
+        return user.getId();
+    }
+
+    /**
+     * 회원 권한 변경 (admin only)
+     */
+    @Transactional
+    public User updateUserRole(Long userId, UserRole role) {
         User user = getUser(userId);
+        // 같은 권한으로 변경하는지 확인
+        if (user.getRole().equals(role)) {
+            throw new IllegalArgumentException("해당 회원의 권한이 이미 " + role + " 상태입니다.");
+        }
         user.updateRole(role);
         return user;
     }
@@ -151,9 +157,15 @@ public class UserService {
         return userRepository.findTop10ByOrderByFollowersCountDesc();
     }
 
-    /**
-     * Refresh 토큰 삭제
-     */
+    private User getUserWithVerification(Long userId, User requestUser) {
+        requestUser.verifyAccessAuthority(userId);
+        return getUser(userId);
+    }
+
+    private boolean isNotSamePassword(String rawPassword, String encodedPassword) {
+        return !passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
     private void deleteRefreshToken(User user) {
         refreshTokenRepository.deleteByUsername(user.getUsername());
     }
