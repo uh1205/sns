@@ -57,7 +57,7 @@ public class Comment {
 
     public void verifyPost(Long postId) {
         if (!postId.equals(this.post.getId())) {
-            throw new DifferentPostException();
+            throw new DifferentPostException("해당 게시물의 댓글이 아닙니다.");
         }
     }
 
