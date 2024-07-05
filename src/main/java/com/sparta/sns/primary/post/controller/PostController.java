@@ -4,6 +4,7 @@ import com.sparta.sns.primary.image.entity.Image;
 import com.sparta.sns.primary.image.service.ImageService;
 import com.sparta.sns.primary.post.dto.PostRequest;
 import com.sparta.sns.primary.post.dto.PostResponse;
+import com.sparta.sns.primary.post.dto.PostSearchCond;
 import com.sparta.sns.primary.post.entity.Post;
 import com.sparta.sns.primary.post.service.PostService;
 import com.sparta.sns.secondary.base.dto.CommonResponse;
@@ -28,7 +29,7 @@ import static com.sparta.sns.secondary.util.ControllerUtil.getResponseEntity;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/posts")
+@RequestMapping("/api")
 public class PostController {
 
     private final PostService postService;
@@ -37,7 +38,10 @@ public class PostController {
     /**
      * 게시물 작성
      */
-    @PostMapping(consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping(
+            value = "/posts",
+            consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE}
+    )
     public ResponseEntity<CommonResponse<?>> createPost(
             @RequestPart @Valid PostRequest request,
             @RequestPart List<MultipartFile> files,
@@ -45,12 +49,12 @@ public class PostController {
             BindingResult bindingResult
     ) {
         if (bindingResult.hasErrors()) {
-            return getFieldErrorResponseEntity(bindingResult, "게시물 생성 실패");
+            return getFieldErrorResponseEntity(bindingResult, "게시물 작성 실패");
         }
         List<Image> images = imageService.upload(files);
         Post post = postService.createPost(request, images, userDetails.getUser());
 
-        return getResponseEntity(PostResponse.of(post), "게시물 생성 성공");
+        return getResponseEntity(PostResponse.of(post), "게시물 작성 성공");
     }
 
     /**
@@ -58,7 +62,7 @@ public class PostController {
      *
      * @param userId - 해당 회원의 전체 게시물을 가져옵니다.
      */
-    @GetMapping
+    @GetMapping("/posts")
     public ResponseEntity<CommonResponse<?>> getAllPosts(
             @RequestParam(defaultValue = "") Long userId,
             @PageableDefault(
@@ -67,7 +71,6 @@ public class PostController {
             ) Pageable pageable
     ) {
         Page<Post> page = postService.getAllPosts(userId, pageable);
-
         Page<PostResponse> response = page.map(PostResponse::of);
 
         return getResponseEntity(response, "전체 게시물 조회 성공");
@@ -76,7 +79,7 @@ public class PostController {
     /**
      * 게시물 조회
      */
-    @GetMapping("/{postId}")
+    @GetMapping("/posts/{postId}")
     public ResponseEntity<CommonResponse<?>> getPost(
             @PathVariable Long postId
     ) {
@@ -88,7 +91,7 @@ public class PostController {
     /**
      * 게시물 수정
      */
-    @PutMapping("/{postId}")
+    @PatchMapping("/posts/{postId}")
     public ResponseEntity<CommonResponse<?>> updatePost(
             @PathVariable Long postId,
             @Valid @RequestBody PostRequest request,
@@ -106,7 +109,7 @@ public class PostController {
     /**
      * 게시물 삭제
      */
-    @DeleteMapping("/{postId}")
+    @DeleteMapping("/posts/{postId}")
     public ResponseEntity<CommonResponse<?>> deletePost(
             @PathVariable Long postId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
@@ -114,6 +117,40 @@ public class PostController {
         Long response = postService.deletePost(postId, userDetails.getUser());
 
         return getResponseEntity(response, "게시물 삭제 성공");
+    }
+
+    /**
+     * 사용자가 좋아요한 전체 게시물 조회
+     */
+    @GetMapping("/user/likes/posts")
+    public ResponseEntity<CommonResponse<?>> getLikedPosts(
+            @PageableDefault(
+                    size = 5
+            ) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Page<Post> page = postService.getLikedPosts(userDetails.getUser(), pageable);
+        Page<PostResponse> response = page.map(PostResponse::of);
+
+        return getResponseEntity(response, "사용자가 좋아요한 전체 게시물 조회 성공");
+    }
+
+    /**
+     * 사용자가 팔로잉 중인 회원들의 전체 게시물 조회
+     */
+    @GetMapping("/user/follows/posts")
+    public ResponseEntity<CommonResponse<?>> getFollowingPosts(
+            @RequestBody PostSearchCond cond,
+            @PageableDefault(
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Page<Post> page = postService.getFollowingPosts(userDetails.getUser(), cond, pageable);
+        Page<PostResponse> response = page.map(PostResponse::of);
+
+        return getResponseEntity(response, "사용자가 팔로잉 중인 회원들의 전체 게시물 조회 성공");
     }
 
 }
