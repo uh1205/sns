@@ -43,11 +43,11 @@ public class FollowController {
             BindingResult bindingResult
     ) {
         if (bindingResult.hasErrors()) {
-            return getFieldErrorResponseEntity(bindingResult, "언팔로우 실패");
+            return getFieldErrorResponseEntity(bindingResult, "팔로우 취소 실패");
         }
         Long response = followService.unfollowUser(request, userDetails.getUser());
 
-        return getResponseEntity(response, "언팔로우 성공");
+        return getResponseEntity(response, "팔로우 취소 성공");
     }
 
 }
