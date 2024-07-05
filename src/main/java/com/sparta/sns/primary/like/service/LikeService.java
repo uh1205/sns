@@ -27,76 +27,72 @@ public class LikeService {
      * 좋아요
      */
     @Transactional
-    public Like doLike(LikeRequest request, User user) {
-        Long contentId = request.getContentId();
+    public Like like(LikeRequest request, User user) {
         ContentType contentType = request.getContentType();
-
+        Long contentId = request.getContentId();
+        // 이미 좋아요 상태인지 확인
         if (likeRepository.existsByContentTypeAndContentIdAndUser(contentType, contentId, user)) {
             throw new AlreadyLikeException("이미 좋아요 상태입니다.");
         }
         Like like = null;
         switch (contentType) {
-            case POST -> like = doLikePost(contentId, user);
-            case COMMENT -> like = doLikeComment(contentId, user);
+            case POST -> like = likePost(contentId, user);
+            case COMMENT -> like = likeComment(contentId, user);
         }
         return like;
     }
 
-    private Like doLikePost(Long postId, User user) {
+    private Like likePost(Long postId, User user) {
         Post post = getPost(postId);
         checkSelfLike(post.getUser().getId(), user.getId());
-
         post.increaseLikeCount();
-        user.getLikedPosts().add(post);
-
-        return Like.of(postId, ContentType.POST, user);
+        user.increaseLikedPostsCount();
+        return likeRepository.save(Like.of(postId, ContentType.POST, user));
     }
 
-    private Like doLikeComment(Long commentId, User user) {
+    private Like likeComment(Long commentId, User user) {
         Comment comment = getComment(commentId);
         checkSelfLike(comment.getUser().getId(), user.getId());
-
         comment.increaseLikeCount();
-        user.getLikedComments().add(comment);
-
-        return Like.of(commentId, ContentType.COMMENT, user);
+        user.increaseLikedCommentsCount();
+        return likeRepository.save(Like.of(commentId, ContentType.COMMENT, user));
     }
 
     /**
      * 좋아요 취소
      */
     @Transactional
-    public Long cancelLike(LikeRequest request, User user) {
-        Long contentId = request.getContentId();
+    public Long unlike(LikeRequest request, User user) {
         ContentType contentType = request.getContentType();
+        Long contentId = request.getContentId();
 
         Like like = getLike(contentType, contentId, user);
         likeRepository.delete(like);
 
         switch (contentType) {
-            case POST -> cancelPostLike(contentId, user);
-            case COMMENT -> cancelCommentLike(contentId, user);
+            case POST -> unLikePost(contentId, user);
+            case COMMENT -> unLikeComment(contentId, user);
         }
         return like.getId();
     }
 
-    private void cancelPostLike(Long postId, User user) {
+    private void unLikePost(Long postId, User user) {
         Post post = getPost(postId);
         post.decreaseLikeCount();
-        user.getLikedPosts().remove(post);
+        user.decreaseLikedPostsCount();
     }
 
-    private void cancelCommentLike(Long commentId, User user) {
+    private void unLikeComment(Long commentId, User user) {
         Comment comment = getComment(commentId);
         comment.decreaseLikeCount();
-        user.getLikedComments().remove(comment);
+        user.decreaseLikedCommentsCount();
     }
 
     /**
      * 본인이 작성한 컨텐츠인지 확인
      */
-    private void checkSelfLike(Long writerId, Long userId) {
-        if (writerId.equals(userId)) {
+    private void checkSelfLike(Long authorId, Long userId) {
+        if (authorId.equals(userId)) {
             throw new SelfLikeException();
         }
     }
