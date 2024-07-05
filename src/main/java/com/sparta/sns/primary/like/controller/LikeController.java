@@ -27,27 +27,27 @@ public class LikeController {
     private final LikeService likeService;
 
     /**
-     * 좋아요 수행
+     * 좋아요
      */
     @PostMapping
-    public ResponseEntity<CommonResponse<?>> doLike(
+    public ResponseEntity<CommonResponse<?>> like(
             @Valid @RequestBody LikeRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             BindingResult bindingResult
     ) {
         if (bindingResult.hasErrors()) {
-            return getFieldErrorResponseEntity(bindingResult, "좋아요 수행 실패");
+            return getFieldErrorResponseEntity(bindingResult, "좋아요 실패");
         }
-        Like like = likeService.doLike(request, userDetails.getUser());
+        Like like = likeService.like(request, userDetails.getUser());
 
-        return getResponseEntity(LikeResponse.of(like), "좋아요 수행 성공");
+        return getResponseEntity(LikeResponse.of(like), "좋아요 성공");
     }
 
     /**
      * 좋아요 취소
      */
     @DeleteMapping
-    public ResponseEntity<CommonResponse<?>> cancelLike(
+    public ResponseEntity<CommonResponse<?>> unlike(
             @Valid @RequestBody LikeRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             BindingResult bindingResult
@@ -55,7 +55,7 @@ public class LikeController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "좋아요 취소 실패");
         }
-        Long response = likeService.cancelLike(request, userDetails.getUser());
+        Long response = likeService.unlike(request, userDetails.getUser());
 
         return getResponseEntity(response, "좋아요 취소 성공");
     }
