@@ -57,20 +57,6 @@ public class PostService {
     }
 
     /**
-     * 팔로잉 중인 회원들의 전체 게시물 조회
-     */
-    public Page<Post> getFollowingPosts(User user, PostSearchCond cond, Pageable pageable) {
-        return postRepositoryCustom.findWithUserFollow(user, cond, pageable);
-    }
-
-    /**
-     * 해당 사용자가 좋아요한 전체 게시물 조회
-     */
-    public Page<Post> getLikedPosts(User user, Pageable pageable) {
-        return postRepositoryCustom.findWithUserLike(user, pageable);
-    }
-
-    /**
      * 게시물 조회
      */
     public Post getPost(Long postId) {
@@ -99,6 +85,20 @@ public class PostService {
         post.verifyUser(user.getId());
         postRepository.delete(post);
         return postId;
+    }
+
+    /**
+     * 해당 사용자가 좋아요한 전체 게시물 조회
+     */
+    public Page<Post> getLikedPosts(User user, Pageable pageable) {
+        return postRepositoryCustom.findWithUserLike(user, pageable);
+    }
+
+    /**
+     * 팔로잉 중인 회원들의 전체 게시물 조회
+     */
+    public Page<Post> getFollowingPosts(User user, PostSearchCond cond, Pageable pageable) {
+        return postRepositoryCustom.findWithUserFollow(user, cond, pageable);
     }
 
     /**
