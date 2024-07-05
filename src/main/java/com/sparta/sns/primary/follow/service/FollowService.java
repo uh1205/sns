@@ -20,29 +20,26 @@ public class FollowService {
 
     @Transactional
     public Follow followUser(FollowRequest request, User follower) {
-        Long followerId = follower.getId();
-        Long followingId = request.getFollowingId();
         // 본인을 팔로우 하는지 확인
-        if (followerId.equals(followingId)) {
+        Long followingId = request.getFollowingId();
+        if (follower.getId().equals(followingId)) {
             throw new SelfFollowException();
         }
         // 이미 팔로우 상태인지 확인
-        if (followRepository.existsByFollowerIdAndFollowingId(followerId, followingId)) {
+        User following = getUser(followingId);
+        if (followRepository.existsByFollowerAndFollowing(follower, following)) {
             throw new AlreadyFollowException("이미 팔로우 상태입니다.");
         }
-        Follow follow = Follow.of(follower, getUser(followingId));
-        return followRepository.save(follow);
+        increaseFollow(follower, following);
+        return followRepository.save(Follow.of(follower, following));
     }
 
     @Transactional
     public Long unfollowUser(FollowRequest request, User follower) {
-        Long followerId = follower.getId();
-        Long followingId = request.getFollowingId();
-        // 본인을 언팔로우 하는지 확인
-        if (followerId.equals(followingId)) {
-            throw new SelfUnfollowException();
-        }
-        Follow follow = getFollow(followerId, followingId);
+        User following = getUser(request.getFollowingId());
+        Follow follow = getFollow(follower, following);
+
+        decreaseFollow(follower, following);
         followRepository.delete(follow);
         return follow.getId();
     }
@@ -52,9 +49,19 @@ public class FollowService {
                 .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
-    private Follow getFollow(Long followerId, Long followingId) {
-        return followRepository.findByFollowerIdAndFollowingId(followerId, followingId)
-                .orElseThrow(() -> new FollowNotFoundException(followerId, followingId));
+    private Follow getFollow(User follower, User following) {
+        return followRepository.findByFollowerAndFollowing(follower, following)
+                .orElseThrow(() -> new FollowNotFoundException(follower.getId(), following.getId()));
+    }
+
+    private void increaseFollow(User follower, User following) {
+        following.increaseFollowersCount();
+        follower.increaseFollowingCount();
+    }
+
+    private void decreaseFollow(User follower, User following) {
+        following.decreaseFollowersCount();
+        follower.decreaseFollowingCount();
     }
 
 }
