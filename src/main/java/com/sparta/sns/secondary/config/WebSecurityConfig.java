@@ -1,9 +1,9 @@
-package com.sparta.sns.config;
+package com.sparta.sns.secondary.config;
 
-import com.sparta.sns.util.JwtProvider;
-import com.sparta.sns.security.JwtAuthenticationFilter;
-import com.sparta.sns.security.JwtAuthorizationFilter;
-import com.sparta.sns.security.UserDetailsServiceImpl;
+import com.sparta.sns.secondary.security.JwtAuthenticationFilter;
+import com.sparta.sns.secondary.security.JwtAuthorizationFilter;
+import com.sparta.sns.secondary.security.UserDetailsServiceImpl;
+import com.sparta.sns.secondary.util.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -63,9 +63,8 @@ public class WebSecurityConfig {
 
         http.authorizeHttpRequests((authorizeHttpRequests) -> authorizeHttpRequests
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                .requestMatchers(HttpMethod.POST, "api/user/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "api/profiles/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "api/products/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "api/user/signup").permitAll()
+                .requestMatchers(HttpMethod.GET, "api/posts/**").permitAll()
                 .anyRequest().authenticated()
         );
 
