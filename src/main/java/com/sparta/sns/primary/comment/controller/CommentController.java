@@ -21,7 +21,7 @@ import static com.sparta.sns.secondary.util.ControllerUtil.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/posts/{postId}/comments")
+@RequestMapping("/api")
 public class CommentController {
 
     private final CommentService commentService;
@@ -29,7 +29,7 @@ public class CommentController {
     /**
      * 댓글 작성
      */
-    @PostMapping
+    @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<CommonResponse<?>> createComment(
             @PathVariable Long postId,
             @Valid @RequestBody CommentRequest request,
@@ -49,7 +49,7 @@ public class CommentController {
     /**
      * 해당 게시물의 전체 댓글 조회
      */
-    @GetMapping
+    @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<CommonResponse<?>> getAllPostComments(
             @PathVariable Long postId,
             @PageableDefault(
@@ -64,14 +64,30 @@ public class CommentController {
     }
 
     /**
+     * 해당 사용자가 좋아요한 전체 댓글 조회
+     */
+    @GetMapping("/user/likes/comments")
+    public ResponseEntity<CommonResponse<?>> getLikedComments(
+            @PageableDefault(
+                    size = 5
+            ) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Page<Comment> page = commentService.getLikedComments(userDetails.getUser(), pageable);
+        Page<CommentResponse> response = page.map(CommentResponse::of);
+
+        return getResponseEntity(response, "사용자가 좋아요한 전체 댓글 조회 성공");
+    }
+
+    /**
      * 댓글 조회
      */
-    @GetMapping("/{commentId}")
+    @GetMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<CommonResponse<?>> getComment(
             @PathVariable Long postId,
             @PathVariable Long commentId
     ) {
-        Comment comment = commentService.getComment(postId, commentId);
+        Comment comment = commentService.getPostComment(postId, commentId);
 
         return getResponseEntity(CommentResponse.of(comment), "댓글 조회 성공");
     }
@@ -79,7 +95,7 @@ public class CommentController {
     /**
      * 댓글 수정
      */
-    @PutMapping("/{commentId}")
+    @PatchMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<CommonResponse<?>> updateComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,
@@ -90,9 +106,9 @@ public class CommentController {
         if (bindingResult.hasErrors()) {
             return getFieldErrorResponseEntity(bindingResult, "댓글 수정 실패");
         }
-        verifyPathIdWithBody(postId, request.getPostId());
+        verifyPathIdWithBody(postId, request.getPostId()); // 수정하고자 하는 게시물이 맞는지 확인
 
-        Comment comment = commentService.updateComment(postId, commentId, request, userDetails.getUser());
+        Comment comment = commentService.updateComment(commentId, request, userDetails.getUser());
 
         return getResponseEntity(CommentResponse.of(comment), "댓글 수정 성공");
     }
@@ -100,7 +116,7 @@ public class CommentController {
     /**
      * 댓글 삭제
      */
-    @DeleteMapping("/{commentId}")
+    @DeleteMapping("/posts/{postId}/comments/{commentId}")
     public ResponseEntity<CommonResponse<?>> deleteComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,
