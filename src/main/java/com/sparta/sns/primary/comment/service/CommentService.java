@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CommentService {
 
-    private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
     private final CommentRepositoryCustomImpl commentRepositoryCustom;
 
     /**
@@ -36,12 +36,17 @@ public class CommentService {
     }
 
     /**
+     * 전체 댓글 조회 (admin only)
+     */
+    public Page<Comment> getAllComments(Pageable pageable) {
+        return commentRepository.findAll(pageable);
+    }
+
+    /**
      * 해당 게시물의 전체 댓글 조회
      */
     public Page<Comment> getAllPostComments(Long postId, Pageable pageable) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new PostNotFoundException(postId));
-        return commentRepository.findAllByPost(post, pageable);
+        return commentRepository.findAllByPostId(postId, pageable);
     }
 
     /**
@@ -52,12 +57,12 @@ public class CommentService {
     }
 
     /**
-     * 특정 댓글 조회
+     * 댓글 조회
      */
-    public Comment getComment(Long postId, Long commentId) {
+    public Comment getPostComment(Long postId, Long commentId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new CommentNotFoundException(commentId));
-        comment.verifyPost(postId);
+        comment.verifyPost(postId); // 해당 게시물의 댓글이 맞는지 확인
         return comment;
     }
 
@@ -65,9 +70,9 @@ public class CommentService {
      * 댓글 수정
      */
     @Transactional
-    public Comment updateComment(Long postId, Long commentId, CommentRequest request, User user) {
-        Comment comment = getComment(postId, commentId);
-        comment.verifyUser(user.getId());
+    public Comment updateComment(Long commentId, CommentRequest request, User user) {
+        Comment comment = getPostComment(request.getPostId(), commentId);
+        comment.verifyUser(user.getId()); // 해당 댓글의 작성자가 맞는지 확인
         comment.update(request);
         return comment;
     }
@@ -77,7 +82,7 @@ public class CommentService {
      */
     @Transactional
     public Long deleteComment(Long postId, Long commentId, User user) {
-        Comment comment = getComment(postId, commentId);
+        Comment comment = getPostComment(postId, commentId);
         comment.verifyUser(user.getId());
         commentRepository.delete(comment);
         return commentId;
