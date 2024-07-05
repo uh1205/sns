@@ -24,11 +24,11 @@ public class Like {
 
     private Long contentId;
 
+    private LocalDateTime likedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
-
-    private LocalDateTime likedAt;
 
     /**
      * 생성자
